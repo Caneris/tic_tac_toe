@@ -70,7 +70,8 @@ while True:
             clicked_col = mouseX // int(WIDTH/3)
             print(clicked_row, clicked_col)
 
-            if available_square(clicked_row, clicked_col):
+            # if available_square(clicked_row, clicked_col):
 
 
     pygame.display.update()
+    
