@@ -8,10 +8,16 @@ HEIGHT = 600
 LINE_WIDTH = 15
 BOARD_ROWS = 3
 BOARD_COLS = 3
+CIRCLE_RADIUS = 65
+CIRCLE_WIDTH = 20
+CROSS_WIDTH = 30
+SPACE = 55
 # rgb: red green blue
 RED = (255, 0 , 0)
 BG_COLOR = (28, 170, 156)
 LINE_COLOR = (23, 145, 135)
+CIRCLE_COLOR = (239, 231, 200)
+CROSS_COLOR = (66, 66, 66)
 
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption('TIC TAC TOE')
@@ -40,6 +46,19 @@ def draw_lines():
     draw_vertical_lines()
 
 
+def draw_figures():
+    x_square, y_square = WIDTH/3, HEIGHT/3
+    for row in range(BOARD_ROWS):
+        for col in range(BOARD_COLS):
+            if board[row, col] == 1:
+                pygame.draw.circle(screen, CIRCLE_COLOR, (int(col*x_square+x_square/2), int(row*y_square+y_square/2)),
+                                   CIRCLE_RADIUS, CIRCLE_WIDTH)
+            elif board[row, col] == 2:
+                pygame.draw.line(screen, CROSS_COLOR, (col*x_square+SPACE, row*y_square+y_square-SPACE),
+                                 (col*x_square+x_square-SPACE, row*y_square+SPACE), CROSS_WIDTH)
+                pygame.draw.line(screen, CROSS_COLOR, (col*x_square+SPACE, row*y_square+SPACE),
+                                 (col*x_square+x_square-SPACE, row*y_square+y_square-SPACE), CROSS_WIDTH)
+
 def mark_square(row, col, player):
     board[row, col] = player
 
@@ -51,7 +70,7 @@ def is_board_full():
     val = np.prod(board)
     return val > 0
 
-print(is_board_full())
+
 draw_lines()
 
 player = 1
@@ -68,10 +87,11 @@ while True:
 
             clicked_row = mouseY // int(HEIGHT/3)
             clicked_col = mouseX // int(WIDTH/3)
-            print(clicked_row, clicked_col)
 
-            # if available_square(clicked_row, clicked_col):
-
+            if available_square(clicked_row, clicked_col):
+                mark_square(clicked_row, clicked_col, player)
+                draw_figures()
+                player = 3 - player
+            print(board)
 
     pygame.display.update()
-    
