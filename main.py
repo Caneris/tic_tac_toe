@@ -1,5 +1,41 @@
 import pygame, sys
 import numpy as np
+import numpy.random as rd
+import pickle
+
+def get_symmetric_states(board):
+    states = [board]
+
+    # Rotations
+    for _ in range(3):
+        board = np.rot90(board)
+        states.append(board)
+
+    # Reflections
+    board = np.flip(board, axis=0)
+    states.append(board)
+    for _ in range(3):
+        board = np.rot90(board)
+        states.append(board)
+
+    states = list(set([board_to_str(state) for state in states]))
+    return states
+def get_max_Q_fom_symmetric_states(Q, board):
+    max_Q = max(Q.get(s, 0) for s in get_symmetric_states(board))
+    return max_Q
+def board_to_str(board):
+    board_ = board.astype(int)
+    str_arr = board_.astype(str)
+    return ''.join(str_arr.flatten())
+
+def take_action(current_board, action, player):
+    b = current_board.copy()
+    b[action[0], action[1]] = player
+    return b
+
+
+# board = np.array([[1., 0., 0.], [2., 0., 1.], [0., 0., 0.]])
+# np.argwhere(board == 0)
 
 pygame.init()
 
@@ -59,8 +95,9 @@ def draw_figures():
                 pygame.draw.line(screen, CROSS_COLOR, (col*x_square+SPACE, row*y_square+SPACE),
                                  (col*x_square+x_square-SPACE, row*y_square+y_square-SPACE), CROSS_WIDTH)
 
-def mark_square(row, col, player):
+def mark_square(board, row, col, player):
     board[row, col] = player
+    return board
 
 
 def available_square(row, col):
@@ -70,6 +107,11 @@ def is_board_full():
     val = np.prod(board)
     return val > 0
 
+# Load the dictionary from the file
+with open('Q_table.pickle', 'rb') as f:
+    Q = pickle.load(f)
+
+print(len(Q))
 
 draw_lines()
 
@@ -81,17 +123,35 @@ while True:
         if event.type == pygame.QUIT:
             sys.exit()
 
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            mouseX = event.pos[0]
-            mouseY = event.pos[1]
+        if player == 2:
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                mouseX = event.pos[0]
+                mouseY = event.pos[1]
 
-            clicked_row = mouseY // int(HEIGHT/3)
-            clicked_col = mouseX // int(WIDTH/3)
+                clicked_row = mouseY // int(HEIGHT/3)
+                clicked_col = mouseX // int(WIDTH/3)
 
-            if available_square(clicked_row, clicked_col):
-                mark_square(clicked_row, clicked_col, player)
+                if board[clicked_row, clicked_col] == 0:
+                    board = mark_square(board, clicked_row, clicked_col, player)
+                    draw_figures()
+                    player = 3 - player
+
+    if player == 1:
+        available_actions = np.argwhere(board == 0)
+        if len(available_actions) > 0:
+            possible_boards = [take_action(board, action, player) for action in available_actions]
+            q_values = [get_max_Q_fom_symmetric_states(Q, b) for b in possible_boards]
+            if sum(q_values) == 0:
+                rand_id = rd.randint(len(available_actions))
+                action = available_actions[rand_id]
+            else:
+                action = available_actions[np.argmax(q_values)]
+            clicked_row, clicked_col = action[0], action[1]
+            if board[clicked_row, clicked_col] == 0.0:
+                board = mark_square(board, clicked_row, clicked_col, player)
                 draw_figures()
                 player = 3 - player
-            print(board)
+
+
 
     pygame.display.update()

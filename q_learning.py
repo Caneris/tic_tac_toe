@@ -1,5 +1,6 @@
 import numpy as np
 import numpy.random as rd
+import pickle
 
 # Encode board state as a string
 def board_to_str(board):
@@ -58,52 +59,65 @@ def game_ended(board):
     return False, None  # Game not ended
 
 Q = {}
-epsilon = 0.2
+epsilon_arr = np.linspace(0.1, 1.0, 10)[::-1]
 gamma = 0.9
 alpha = 0.5
+T = 100000
 
-for episode in range(100000):
-    board = np.zeros((3, 3), dtype=int)
-    player = 1
+for epsilon in epsilon_arr:
+    print(f"epsilon = {epsilon}")
+    for episode in range(T):
+        board = np.zeros((3, 3), dtype=int)
+        player = 1
+        if episode % int(T/100) == 0:
+            print(f"{(episode/T)*100} %")
 
-    while True:
-        # choose action using epsilon-greedy strategy
-        available_actions = np.argwhere(board == 0)
-        if rd.rand() < epsilon:
-            rand_id = rd.randint(len(available_actions))
-            action = available_actions[rand_id]
-        else:
-            possible_boards = [take_action(board, action, player) for action in available_actions]
-            q_values = [Q.get(board_to_str(b), 0) for b in possible_boards]
-            if player == 1:
-                action = available_actions[np.argmax(q_values)]
+        while True:
+            # choose action using epsilon-greedy strategy
+            available_actions = np.argwhere(board == 0)
+            if rd.rand() < epsilon:
+                rand_id = rd.randint(len(available_actions))
+                action = available_actions[rand_id]
             else:
-                action = available_actions[np.argmin(q_values)]
+                possible_boards = [take_action(board, action, player) for action in available_actions]
+                q_values = [Q.get(board_to_str(b), 0) for b in possible_boards]
+                if player == 1:
+                    action = available_actions[np.argmax(q_values)]
+                else:
+                    action = available_actions[np.argmin(q_values)]
 
-        # Take action and observe next state
-        next_board = take_action(board, action, player)
-        ended, winner = game_ended(next_board)
+            # Take action and observe next state
+            next_board = take_action(board, action, player)
+            ended, winner = game_ended(next_board)
 
-        # Update Q-table
-        if ended:
-            reward = 1 if winner == 1 else -1 if winner == 2 else 0
-            target = reward
-        else:
-            reward = 0
-            next_state = board_to_str(next_board)
-            if player == 1:
-                target = reward + gamma * max(Q.get(s, 0) for s in get_symmetric_states(next_board))
+            # Update Q-table
+            if ended:
+                reward = 1 if winner == 1 else -1 if winner == 2 else 0
+                target = reward
             else:
-                target = reward + gamma * min(Q.get(s, 0) for s in get_symmetric_states(next_board))
+                reward = 0
+                next_state = board_to_str(next_board)
+                if player == 1:
+                    target = reward + gamma * max(Q.get(s, 0) for s in get_symmetric_states(next_board))
+                else:
+                    target = reward + gamma * min(Q.get(s, 0) for s in get_symmetric_states(next_board))
 
-        current_state = board_to_str(board)
-        Q[current_state] = Q.get(current_state, 0) + alpha * (target - Q.get(current_state, 0))
+            current_state = board_to_str(board)
+            Q[current_state] = Q.get(current_state, 0) + alpha * (target - Q.get(current_state, 0))
 
-        if ended:
-            break
+            if ended:
+                break
 
-        board = next_board
-        player = 3 - player
+            board = next_board
+            player = 3 - player
 
-str_to_board(current_state)
-Q['112211200']
+# Save the dictionary to a file
+with open('Q_table.pickle', 'wb') as f:
+    pickle.dump(Q, f)
+
+# # Load the dictionary from the file
+# with open('Q_table.pickle', 'rb') as f:
+#     Q = pickle.load(f)
+#
+# # Print the loaded dictionary
+# print(loaded_dict)
