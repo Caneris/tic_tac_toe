@@ -32,7 +32,7 @@ def get_symmetric_states(board):
         states.append(board)
 
     # Reflections
-    next_board = np.flip(board, axis=0)
+    board = np.flip(board, axis=0)
     states.append(board)
     for _ in range(3):
         board = np.rot90(board)
