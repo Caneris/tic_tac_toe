@@ -59,10 +59,12 @@ def game_ended(board):
     return False, None  # Game not ended
 
 Q = {}
-epsilon_arr = np.linspace(0.1, 1.0, 10)[::-1]
-gamma = 0.9
+# with open('Q_table.pickle', 'rb') as f:
+#     Q = pickle.load(f)
+epsilon_arr = np.linspace(0.1, 1.0, 5)[::-1]
+gamma = 0.5
 alpha = 0.5
-T = 100000
+T = 10000
 
 for epsilon in epsilon_arr:
     print(f"epsilon = {epsilon}")
