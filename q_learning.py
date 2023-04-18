@@ -58,11 +58,19 @@ def game_ended(board):
         return True, 0  # Draw
     return False, None  # Game not ended
 
+def get_max_Q_fom_symmetric_states(Q, board):
+    max_Q = max(Q.get(s, 0) for s in get_symmetric_states(board))
+    return max_Q
+
+def get_min_Q_fom_symmetric_states(Q, board):
+    min_Q = min(Q.get(s, 0) for s in get_symmetric_states(board))
+    return min_Q
+
 Q = {}
 # with open('Q_table.pickle', 'rb') as f:
 #     Q = pickle.load(f)
 epsilon_arr = np.linspace(0.1, 1.0, 5)[::-1]
-gamma = 0.5
+gamma = 0.8
 alpha = 0.5
 T = 10000
 
@@ -77,15 +85,24 @@ for epsilon in epsilon_arr:
         while True:
             # choose action using epsilon-greedy strategy
             available_actions = np.argwhere(board == 0)
-            if rd.rand() < epsilon:
+
+            if player == 1:
+                cond = epsilon
+            else:
+                cond = epsilon
+
+            if rd.rand() < cond:
                 rand_id = rd.randint(len(available_actions))
                 action = available_actions[rand_id]
             else:
                 possible_boards = [take_action(board, action, player) for action in available_actions]
-                q_values = [Q.get(board_to_str(b), 0) for b in possible_boards]
+                # q_values = [Q.get(board_to_str(b), 0) for b in possible_boards]
+                q_values = [get_max_Q_fom_symmetric_states(Q, b) for b in possible_boards]
                 if player == 1:
+                    q_values = [get_max_Q_fom_symmetric_states(Q, b) for b in possible_boards]
                     action = available_actions[np.argmax(q_values)]
                 else:
+                    q_values = [get_min_Q_fom_symmetric_states(Q, b) for b in possible_boards]
                     action = available_actions[np.argmin(q_values)]
 
             # Take action and observe next state
@@ -95,10 +112,11 @@ for epsilon in epsilon_arr:
             # Update Q-table
             if ended:
                 reward = 1 if winner == 1 else -1 if winner == 2 else 0
+                next_state = board_to_str(next_board)
                 target = reward
+                Q[next_state] = target
             else:
                 reward = 0
-                next_state = board_to_str(next_board)
                 if player == 1:
                     target = reward + gamma * max(Q.get(s, 0) for s in get_symmetric_states(next_board))
                 else:
@@ -120,6 +138,3 @@ with open('Q_table.pickle', 'wb') as f:
 # # Load the dictionary from the file
 # with open('Q_table.pickle', 'rb') as f:
 #     Q = pickle.load(f)
-#
-# # Print the loaded dictionary
-# print(loaded_dict)
