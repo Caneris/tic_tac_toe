@@ -66,9 +66,9 @@ def get_min_Q_fom_symmetric_states(Q, board):
     min_Q = min(Q.get(s, 0) for s in get_symmetric_states(board))
     return min_Q
 
-Q = {}
-# with open('Q_table.pickle', 'rb') as f:
-#     Q = pickle.load(f)
+# Q = {}
+with open('Q_table.pickle', 'rb') as f:
+    Q = pickle.load(f)
 epsilon_arr = np.linspace(0.1, 1.0, 5)[::-1]
 gamma = 0.8
 alpha = 0.5
@@ -97,7 +97,7 @@ for epsilon in epsilon_arr:
             else:
                 possible_boards = [take_action(board, action, player) for action in available_actions]
                 # q_values = [Q.get(board_to_str(b), 0) for b in possible_boards]
-                q_values = [get_max_Q_fom_symmetric_states(Q, b) for b in possible_boards]
+                #q_values = [get_max_Q_fom_symmetric_states(Q, b) for b in possible_boards]
                 if player == 1:
                     q_values = [get_max_Q_fom_symmetric_states(Q, b) for b in possible_boards]
                     action = available_actions[np.argmax(q_values)]
