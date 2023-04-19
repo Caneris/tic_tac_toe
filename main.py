@@ -120,7 +120,7 @@ def handle_human_event(player, human_player, board):
 def ai_max(available_actions, board, player, Q):
     possible_boards = [take_action(board, action, player) for action in available_actions]
     q_values = [get_max_Q_fom_symmetric_states(Q, b) for b in possible_boards]
-    if sum(q_values) == 0:
+    if sum(q_values) == 0 or np.sum(board) == 0:
         rand_id = rd.randint(len(available_actions))
         action = available_actions[rand_id]
     else:
