@@ -111,8 +111,6 @@ def handle_human_event(player, human_player, board, human_turn):
                     board = mark_square(board, clicked_row, clicked_col, player)
                     draw_figures()
                     player = 3 - player
-                    print(board)
-                    print()
 
         # if event.type == pygame.KEYDOWN:
         #     if event.key == pygame.K_r:
@@ -264,11 +262,13 @@ def end_screen(winner, human_player, AI_player, player, board):
     else:
         text = "It's a draw!"
     pygame.font.init()
-    font_path = "I-pixel-u.ttf"
-    font_size = 30
-    font = pygame.font.Font(font_path, font_size)
-    text_surface1 = font.render(text, True, (0, 0, 0))
-    text_surface2 = font.render("Press 'R' to restart the game", True, (0, 0, 0))
+    font_path = "04B_30__.TTF"
+    font_size1 = 40
+    font_size2 = 20
+    font1 = pygame.font.Font(font_path, font_size1)
+    font2 = pygame.font.Font(font_path, font_size2)
+    text_surface1 = font1.render(text, True, (0, 0, 0))
+    text_surface2 = font2.render("Press 'R' to restart the game", True, (0, 0, 0))
     # screen.fill(BG_COLOR)
     screen.blit(text_surface1, (WIDTH // 2 - text_surface1.get_width() // 2, HEIGHT // 2 - 100))
     screen.blit(text_surface2, (WIDTH // 2 - text_surface2.get_width() // 2, HEIGHT // 2))
@@ -323,7 +323,6 @@ start = False
 
 human_player = start_screen()
 AI_player = 3 - human_player
-print(f"AI_player: {AI_player}")
 human_turn = False
 if human_player == 1:
     human_turn = True
