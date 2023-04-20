@@ -93,13 +93,14 @@ def is_board_full():
     val = np.prod(board)
     return val > 0
 
-def handle_human_event(player, human_player, board):
+def handle_human_event(player, human_player, board, human_turn):
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             sys.exit()
 
         if player == human_player:
-            if event.type == pygame.MOUSEBUTTONDOWN and not game_over:
+            if event.type == pygame.MOUSEBUTTONDOWN and not game_over and human_turn:
+                human_turn = False
                 mouseX = event.pos[0]
                 mouseY = event.pos[1]
 
@@ -110,43 +111,35 @@ def handle_human_event(player, human_player, board):
                     board = mark_square(board, clicked_row, clicked_col, player)
                     draw_figures()
                     player = 3 - player
+                    print(board)
+                    print()
 
         # if event.type == pygame.KEYDOWN:
         #     if event.key == pygame.K_r:
         #         restart()
         #         game_over = False
-    return player
+    return board, player, human_turn
 
 def ai_max(available_actions, board, player, Q):
     possible_boards = [take_action(board, action, player) for action in available_actions]
-    q_values = [get_max_Q_fom_symmetric_states(Q, b) for b in possible_boards]
-    if sum(q_values) == 0 or np.sum(board) == 0:
+    q_values = [Q.get(board_to_str(b), 0) for b in possible_boards]
+    if np.all(board==0):
         rand_id = rd.randint(len(available_actions))
         action = available_actions[rand_id]
     else:
-        m = q_values == np.max(q_values)
-        if np.sum(m) > 1:
-            rand_id = rd.randint(len(available_actions[m]))
-            action = available_actions[m][rand_id]
-        else:
-            action = available_actions[np.argmax(q_values)]
+        action = available_actions[np.argmax(q_values)]
     clicked_row, clicked_col = action[0], action[1]
     return clicked_row, clicked_col
 
 
 def ai_min(available_actions, board, player, Q):
     possible_boards = [take_action(board, action, player) for action in available_actions]
-    q_values = [get_min_Q_fom_symmetric_states(Q, b) for b in possible_boards]
-    if sum(q_values) == 0:
+    q_values = [Q.get(board_to_str(b), 0) for b in possible_boards]
+    if np.all(board==0):
         rand_id = rd.randint(len(available_actions))
         action = available_actions[rand_id]
     else:
-        m = q_values == np.min(q_values)
-        if np.sum(m) > 1:
-            rand_id = rd.randint(len(available_actions[m]))
-            action = available_actions[m][rand_id]
-        else:
-            action = available_actions[np.argmin(q_values)]
+        action = available_actions[np.argmin(q_values)]
     clicked_row, clicked_col = action[0], action[1]
     return clicked_row, clicked_col
 
@@ -161,7 +154,7 @@ def handle_ai_event(player, AI_player, Q, board):
             board = mark_square(board, clicked_row, clicked_col, player)
             draw_figures()
             player = 3 - player
-    return player
+    return board, player, True
 
 
 def game_ended(board):
@@ -224,23 +217,32 @@ def draw_descending_diag(player):
     pygame.draw.line(screen, color, (15, 15), (WIDTH-15, HEIGHT-15), 15)
 
 
-def restart():
+def restart(player, board):
     screen.fill( BG_COLOR )
     draw_lines()
     player = 1
     board[:,:] = np.zeros((BOARD_ROWS, BOARD_COLS))
+    return board, player
 
 
 def start_screen():
     pygame.font.init()
-    font_path = "JMH Typewriter-Bold.otf"
-    font_size = 40
+    font_path = "04B_30__.TTF"
+    font_size = 20
     font = pygame.font.Font(font_path, font_size)
+    title_font = pygame.font.Font(font_path, font_size+10)
+    note_font = pygame.font.Font(font_path, font_size - 5)
+    title_surface = title_font.render("TIC TAC TOE", True, (0, 0, 0))
+    title_rect = title_surface.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 200))
     text_surface1 = font.render("Press '1' to be Player 1 (O)", True, (0, 0, 0))
     text_surface2 = font.render("Press '2' to be Player 2 (X)", True, (0, 0, 0))
+    note_surface = note_font.render("Programmed by Caner Ates", True, (0, 0, 0))
+    note_rect = note_surface.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 100))
     screen.fill(BG_COLOR)
+    screen.blit(title_surface, title_rect)
     screen.blit(text_surface1, (WIDTH // 2 - text_surface1.get_width() // 2, HEIGHT // 2 - 100))
     screen.blit(text_surface2, (WIDTH // 2 - text_surface2.get_width() // 2, HEIGHT // 2))
+    screen.blit(note_surface, note_rect)
     pygame.display.update()
     #pygame.display.flip()
 
@@ -254,12 +256,18 @@ def start_screen():
                 elif event.key == pygame.K_2:
                     return 2
 
-def end_screen():
+def end_screen(winner, human_player, AI_player, player, board):
+    if winner == human_player:
+        text = "You won!"
+    elif winner == AI_player:
+        text = "You lost!"
+    else:
+        text = "It's a draw!"
     pygame.font.init()
-    font_path = "JMH Typewriter-Bold.otf"
+    font_path = "I-pixel-u.ttf"
     font_size = 30
     font = pygame.font.Font(font_path, font_size)
-    text_surface1 = font.render("Game Over!", True, (0, 0, 0))
+    text_surface1 = font.render(text, True, (0, 0, 0))
     text_surface2 = font.render("Press 'R' to restart the game", True, (0, 0, 0))
     # screen.fill(BG_COLOR)
     screen.blit(text_surface1, (WIDTH // 2 - text_surface1.get_width() // 2, HEIGHT // 2 - 100))
@@ -273,13 +281,13 @@ def end_screen():
                 sys.exit()
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_r:
-                    return restart()
+                    return restart(player, board)
 
 pygame.init()
 
 WIDTH = 600
 HEIGHT = 600
-LINE_WIDTH = 15
+LINE_WIDTH = 30
 BOARD_ROWS = 3
 BOARD_COLS = 3
 CIRCLE_RADIUS = 65
@@ -288,14 +296,10 @@ CROSS_WIDTH = 30
 SPACE = 55
 # rgb: red green blue
 RED = (255, 0 , 0)
-BG_COLOR = (28, 170, 156)
-LINE_COLOR = (23, 145, 135)
-CIRCLE_COLOR = (239, 231, 200)
+BG_COLOR = (255, 204, 229)
+LINE_COLOR = (216, 162, 162)
+CIRCLE_COLOR = (0, 102, 0)
 CROSS_COLOR = (66, 66, 66)
-
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption('TIC TAC TOE')
-screen.fill(BG_COLOR)
 
 # board
 board = np.zeros((BOARD_ROWS, BOARD_COLS))
@@ -303,6 +307,12 @@ board = np.zeros((BOARD_ROWS, BOARD_COLS))
 # Load the dictionary from the file
 with open('Q_table.pickle', 'rb') as f:
     Q = pickle.load(f)
+
+len(Q)
+
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption('TIC TAC TOE')
+screen.fill(BG_COLOR)
 
 human_player = 1
 AI_player = 2
@@ -313,17 +323,30 @@ start = False
 
 human_player = start_screen()
 AI_player = 3 - human_player
+print(f"AI_player: {AI_player}")
+human_turn = False
+if human_player == 1:
+    human_turn = True
+else:
+    human_turn = False
+
 
 screen.fill(BG_COLOR)
 draw_lines()
 # mainloop
 while True:
-        player = handle_human_event(player, human_player, board)
+        board, player, human_turn = handle_human_event(player, human_player, board, human_turn)
         pygame.display.update()
-        player = handle_ai_event(player, AI_player, Q, board)
         ended, winner = game_ended(board)
         if ended:
             game_over = True
-            end_screen()
+            board, player = end_screen(winner, human_player, AI_player, player, board)
+            game_over = False
+
+        board, player, human_turn = handle_ai_event(player, AI_player, Q, board)
+        ended, winner = game_ended(board)
+        if ended:
+            game_over = True
+            board, player = end_screen(winner, human_player, AI_player, player, board)
             game_over = False
         pygame.display.update()
